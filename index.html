@@ -3,8 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-  <title>Disk Scheduler | FCFS · SSTF · SCAN | SDG 7</title>
+  <title>Disk Scheduler | FCFS · SSTF · SCAN | Visualizer</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     * {
       margin: 0;
@@ -13,32 +14,29 @@
     }
 
     body {
-      background: linear-gradient(145deg, #c8e6d0 0%, #a8c9a8 100%);
-      font-family: 'Segoe UI', 'Inter', system-ui, -apple-system, sans-serif;
+      background: linear-gradient(145deg, #d2e8d0 0%, #b4cfb0 100%);
+      font-family: 'Inter', 'Segoe UI', sans-serif;
       min-height: 100vh;
-      padding: 1.5rem;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      padding: 1.8rem;
     }
 
-    /* main glass card */
-    .sim-card {
-      max-width: 1300px;
-      width: 100%;
-      background: rgba(255, 255, 250, 0.96);
-      backdrop-filter: blur(4px);
-      border-radius: 2.5rem;
+    /* main container – glassmorphic card */
+    .scheduler {
+      max-width: 1400px;
+      margin: 0 auto;
+      background: rgba(255, 255, 248, 0.96);
+      backdrop-filter: blur(2px);
+      border-radius: 2rem;
       box-shadow: 0 25px 45px -12px rgba(0, 32, 0, 0.4);
       overflow: hidden;
       transition: all 0.2s;
-      border: 1px solid rgba(180, 210, 160, 0.5);
+      border: 1px solid rgba(170, 200, 150, 0.6);
     }
 
     /* header with SDG 7 */
-    .hero {
+    .header {
       background: linear-gradient(135deg, #1e3a2f, #143023);
-      padding: 1.2rem 2rem;
+      padding: 1rem 2rem;
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -46,8 +44,8 @@
       gap: 1rem;
       color: #fef9e6;
     }
-    .hero h1 {
-      font-size: 1.7rem;
+    .header h1 {
+      font-size: 1.8rem;
       font-weight: 700;
       letter-spacing: -0.3px;
       display: flex;
@@ -55,27 +53,27 @@
       gap: 0.6rem;
       flex-wrap: wrap;
     }
-    .hero h1 span {
+    .header h1 span {
       background: #ffda99;
       color: #1e3a2f;
       font-size: 0.8rem;
       padding: 0.2rem 0.9rem;
       border-radius: 60px;
-      font-weight: 600;
+      font-weight: 700;
     }
-    .sdg-badge {
+    .sdg {
       background: #2f6b47;
-      padding: 0.45rem 1.1rem;
+      padding: 0.45rem 1.2rem;
       border-radius: 60px;
       display: flex;
       align-items: center;
       gap: 0.6rem;
       font-weight: 500;
       font-size: 0.85rem;
-      box-shadow: inset 0 0 0 1px #8fc28a;
+      box-shadow: inset 0 0 0 1px #92c28e;
     }
 
-    /* main layout */
+    /* layout */
     .dashboard {
       display: flex;
       flex-wrap: wrap;
@@ -83,19 +81,18 @@
       padding: 2rem;
     }
 
-    /* controls panel */
-    .control-panel {
+    /* left panel – controls & stats */
+    .controls {
       flex: 1.2;
       min-width: 280px;
       background: #ffffffdd;
       border-radius: 1.5rem;
       padding: 1.5rem;
       border: 1px solid #cde0c5;
-      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.03);
+      box-shadow: 0 6px 12px rgba(0,0,0,0.02);
     }
-
-    .input-group {
-      margin-bottom: 1.3rem;
+    .input-field {
+      margin-bottom: 1.2rem;
     }
     label {
       font-weight: 700;
@@ -111,7 +108,7 @@
       padding: 0.7rem 1rem;
       border-radius: 1rem;
       border: 1.5px solid #d4e8ca;
-      font-family: 'Segoe UI', monospace;
+      font-family: 'Inter', monospace;
       font-size: 0.9rem;
       background: white;
       transition: 0.2s;
@@ -134,10 +131,10 @@
       background: #1e5f3a;
       transform: translateY(-2px);
     }
-    .btn-light {
+    .btn-secondary {
       background: #5c8f71;
     }
-    .dir-toggle {
+    .dir-box {
       background: #eaf4e5;
       border-radius: 1rem;
       padding: 0.5rem 1rem;
@@ -148,19 +145,19 @@
       flex-wrap: wrap;
       font-size: 0.85rem;
     }
-    .stats-box {
+    .stats-card {
       background: #eaf1e6;
       border-radius: 1.2rem;
       padding: 1rem;
       margin: 1.2rem 0;
     }
-    .big-seek {
+    .big-number {
       font-size: 2rem;
       font-weight: 800;
       color: #1c5a38;
       line-height: 1;
     }
-    .seq-panel {
+    .seq-box {
       background: #fffef5;
       border-radius: 1rem;
       padding: 0.8rem;
@@ -175,15 +172,15 @@
       border-color: #cde0c5;
     }
 
-    /* visualization panel */
-    .viz-panel {
+    /* right panel – chart + step table */
+    .visualization {
       flex: 2.4;
       min-width: 480px;
       background: white;
       border-radius: 1.5rem;
       padding: 1.2rem;
       border: 1px solid #d4e6ce;
-      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.02);
+      box-shadow: 0 4px 14px rgba(0,0,0,0.02);
     }
     canvas {
       max-height: 380px;
@@ -192,7 +189,7 @@
     .legend {
       font-size: 0.7rem;
       text-align: center;
-      margin-top: 0.6rem;
+      margin-top: 0.5rem;
       color: #426b51;
     }
     .step-table {
@@ -206,59 +203,58 @@
       text-align: center;
       border-bottom: 1px solid #e2f0da;
     }
-
     @media (max-width: 800px) {
       body { padding: 1rem; }
       .dashboard { flex-direction: column; padding: 1rem; }
-      .viz-panel { min-width: auto; }
+      .visualization { min-width: auto; }
     }
   </style>
 </head>
 <body>
-<div class="sim-card">
-  <div class="hero">
-    <h1>⚙️ Disk Scheduling Simulator <span>FCFS · SSTF · SCAN</span></h1>
-    <div class="sdg-badge">🌱 SDG 7 · Affordable & Clean Energy ⚡</div>
+<div class="scheduler">
+  <div class="header">
+    <h1>⚡ Disk Scheduling <span>FCFS · SSTF · SCAN</span></h1>
+    <div class="sdg">🌱 SDG 7 · Efficient Access = Lower Energy</div>
   </div>
   <div class="dashboard">
-    <!-- left: controls -->
-    <div class="control-panel">
-      <div class="input-group">
+    <!-- LEFT: CONFIGURATION -->
+    <div class="controls">
+      <div class="input-field">
         <label>📋 Request queue (comma)</label>
-        <input type="text" id="requestsInput" value="98,183,37,122,14,124,65,67" placeholder="e.g., 98,183,37">
+        <input type="text" id="reqQueue" value="98,183,37,122,14,124,65,67" placeholder="e.g., 98,183,37">
       </div>
-      <div class="input-group">
+      <div class="input-field">
         <label>🎯 Initial head position</label>
-        <input type="number" id="headStart" value="53">
+        <input type="number" id="headPos" value="53">
       </div>
-      <div class="input-group">
+      <div class="input-field">
         <label>💾 Disk size (max track, 0..N-1)</label>
-        <input type="number" id="diskSize" value="199" min="1">
+        <input type="number" id="diskMax" value="199" min="1">
       </div>
-      <div class="input-group">
-        <label>⚙️ Algorithm</label>
-        <select id="algorithm">
+      <div class="input-field">
+        <label>🧠 Algorithm</label>
+        <select id="algoSelect">
           <option value="FCFS">FCFS (First Come First Served)</option>
           <option value="SSTF">SSTF (Shortest Seek Time First)</option>
           <option value="SCAN">SCAN (Elevator)</option>
         </select>
-        <div id="scanDirBox" style="display: none;">
-          <div class="dir-toggle">
+        <div id="scanDirection" style="display: none;">
+          <div class="dir-box">
             <span>🧭 SCAN direction :</span>
-            <label><input type="radio" name="scanDir" value="right" checked> ➡️ Right (toward higher)</label>
-            <label><input type="radio" name="scanDir" value="left"> ⬅️ Left (toward lower)</label>
+            <label><input type="radio" name="scanDir" value="right" checked> ➡️ Right (higher tracks)</label>
+            <label><input type="radio" name="scanDir" value="left"> ⬅️ Left (lower tracks)</label>
           </div>
           <div style="font-size:0.7rem; margin-top:5px;">* SCAN goes to disk end, then reverses</div>
         </div>
       </div>
       <button id="simulateBtn">🚀 SIMULATE</button>
-      <button id="randomBtn" class="btn-light">🎲 Random requests</button>
-      <button id="classicBtn" class="btn-light">📖 Load classic example</button>
+      <button id="randomBtn" class="btn-secondary">🎲 Random requests</button>
+      <button id="exampleBtn" class="btn-secondary">📖 Load classic example</button>
 
-      <div class="stats-box">
+      <div class="stats-card">
         <div style="display: flex; justify-content: space-between; align-items: baseline;">
           <span>📊 Total seek distance</span>
-          <span class="big-seek" id="totalSeek">—</span>
+          <span class="big-number" id="totalSeek">—</span>
         </div>
         <div style="display: flex; justify-content: space-between; margin-top: 8px;">
           <span>📈 Average seek</span><span id="avgSeek">—</span>
@@ -268,13 +264,13 @@
         </div>
         <hr>
         <div style="font-weight: 600;">📌 Service order (head positions)</div>
-        <div class="seq-panel" id="seqDisplay">—</div>
+        <div class="seq-box" id="seqDisplay">—</div>
       </div>
     </div>
 
-    <!-- right: chart + step table -->
-    <div class="viz-panel">
-      <div style="font-weight: 700; margin-bottom: 0.3rem;">📉 Head movement trajectory</div>
+    <!-- RIGHT: CHART + STEP TABLE -->
+    <div class="visualization">
+      <div style="font-weight: 700; margin-bottom: 0.3rem;">📈 Head movement trajectory</div>
       <canvas id="movementChart" width="800" height="360" style="width:100%; max-height:360px;"></canvas>
       <div class="legend">X‑axis: access step | Y‑axis: track number</div>
       <hr>
@@ -291,14 +287,14 @@
 
 <script>
   // DOM elements
-  const reqInput = document.getElementById('requestsInput');
-  const headInput = document.getElementById('headStart');
-  const diskInput = document.getElementById('diskSize');
-  const algoSelect = document.getElementById('algorithm');
-  const scanDirBox = document.getElementById('scanDirBox');
+  const reqInput = document.getElementById('reqQueue');
+  const headInput = document.getElementById('headPos');
+  const diskInput = document.getElementById('diskMax');
+  const algoSelect = document.getElementById('algoSelect');
+  const scanDirDiv = document.getElementById('scanDirection');
   const simulateBtn = document.getElementById('simulateBtn');
   const randomBtn = document.getElementById('randomBtn');
-  const classicBtn = document.getElementById('classicBtn');
+  const exampleBtn = document.getElementById('exampleBtn');
   const totalSpan = document.getElementById('totalSeek');
   const avgSpan = document.getElementById('avgSeek');
   const moveSpan = document.getElementById('moveCount');
@@ -309,7 +305,7 @@
 
   // toggle SCAN direction UI
   function toggleScanUI() {
-    scanDirBox.style.display = algoSelect.value === 'SCAN' ? 'block' : 'none';
+    scanDirDiv.style.display = algoSelect.value === 'SCAN' ? 'block' : 'none';
   }
   algoSelect.addEventListener('change', toggleScanUI);
   toggleScanUI();
@@ -326,7 +322,7 @@
     return nums;
   }
 
-  // ---------- ALGORITHMS ----------
+  // ---------- ALGORITHMS (return full sequence including initial head) ----------
   function fcfs(requests, head) {
     return [head, ...requests];
   }
@@ -360,14 +356,12 @@
     let seq = [head];
     let current = head;
     if (direction === 'right') {
-      // go right first
       for (let r of right) { seq.push(r); current = r; }
       if (left.length) {
         if (current !== diskMax) { seq.push(diskMax); current = diskMax; }
         for (let r of left) { seq.push(r); current = r; }
       }
     } else {
-      // go left first
       for (let r of left) { seq.push(r); current = r; }
       if (right.length) {
         if (current !== 0) { seq.push(0); current = 0; }
@@ -377,7 +371,7 @@
     return seq;
   }
 
-  // compute statistics and step details
+  // compute statistics and step-by-step details
   function computeDetails(sequence) {
     if (sequence.length < 2) return { total: 0, avg: 0, moves: 0, steps: [] };
     let total = 0;
@@ -392,15 +386,15 @@
     return { total, avg: avg.toFixed(2), moves, steps };
   }
 
-  // update chart and UI
+  // update UI: stats, sequence text, step table, and chart
   function updateUI(sequence, maxDisk) {
     const stats = computeDetails(sequence);
     totalSpan.innerText = stats.total;
     avgSpan.innerText = stats.avg;
     moveSpan.innerText = stats.moves;
 
-    // display full sequence
-    let seqStr = sequence.map((val, idx) => idx === 0 ? `⚫ ${val}` : `→ ${val}`).join(' ');
+    // display sequence with arrows
+    let seqStr = sequence.map((val, idx) => idx === 0 ? `📍 ${val}` : `→ ${val}`).join(' ');
     seqDisplay.innerText = seqStr;
 
     // build step table
@@ -414,7 +408,7 @@
       });
     }
 
-    // draw chart
+    // chart update
     const ctx = document.getElementById('movementChart').getContext('2d');
     const stepsAxis = sequence.map((_, i) => i);
     if (chart) {
@@ -453,12 +447,12 @@
     }
   }
 
-  // main simulation controller
+  // main simulation runner
   function runSimulation() {
     let raw = reqInput.value;
     let requests = parseRequests(raw);
     if (requests === null) {
-      alert("❌ Invalid request format! Use comma separated numbers (e.g., 98, 183, 37)");
+      alert("❌ Invalid format! Use comma separated numbers (e.g., 98, 183, 37)");
       return;
     }
     let head = parseInt(headInput.value);
@@ -487,7 +481,7 @@
     updateUI(sequence, diskMax);
   }
 
-  // generate random requests within disk range
+  // generate random requests within disk limits
   function randomRequests() {
     let max = parseInt(diskInput.value);
     if (isNaN(max) || max < 1) max = 199;
@@ -509,10 +503,10 @@
     runSimulation();
   }
 
-  // event binding
+  // event listeners
   simulateBtn.addEventListener('click', runSimulation);
   randomBtn.addEventListener('click', randomRequests);
-  classicBtn.addEventListener('click', loadClassic);
+  exampleBtn.addEventListener('click', loadClassic);
   window.addEventListener('load', runSimulation);
 </script>
 </body>
