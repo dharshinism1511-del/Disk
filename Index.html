@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>Disk Scheduler | FCFS · SSTF · SCAN | Visualizer</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: linear-gradient(145deg, #d2e8d0 0%, #b4cfb0 100%);
+      font-family: 'Inter', 'Segoe UI', sans-serif;
+      min-height: 100vh;
+      padding: 1.8rem;
+    }
+
+    /* main container – glassmorphic card */
+    .scheduler {
+      max-width: 1400px;
+      margin: 0 auto;
+      background: rgba(255, 255, 248, 0.96);
+      backdrop-filter: blur(2px);
+      border-radius: 2rem;
+      box-shadow: 0 25px 45px -12px rgba(0, 32, 0, 0.4);
+      overflow: hidden;
+      transition: all 0.2s;
+      border: 1px solid rgba(170, 200, 150, 0.6);
+    }
+
+    /* header with SDG 7 */
+    .header {
+      background: linear-gradient(135deg, #1e3a2f, #143023);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+      color: #fef9e6;
+    }
+    .header h1 {
+      font-size: 1.8rem;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+    }
+    .header h1 span {
+      background: #ffda99;
+      color: #1e3a2f;
+      font-size: 0.8rem;
+      padding: 0.2rem 0.9rem;
+      border-radius: 60px;
+      font-weight: 700;
+    }
+    .sdg {
+      background: #2f6b47;
+      padding: 0.45rem 1.2rem;
+      border-radius: 60px;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      font-weight: 500;
+      font-size: 0.85rem;
+      box-shadow: inset 0 0 0 1px #92c28e;
+    }
+
+    /* layout */
+    .dashboard {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1.8rem;
+      padding: 2rem;
+    }
+
+    /* left panel – controls & stats */
+    .controls {
+      flex: 1.2;
+      min-width: 280px;
+      background: #ffffffdd;
+      border-radius: 1.5rem;
+      padding: 1.5rem;
+      border: 1px solid #cde0c5;
+      box-shadow: 0 6px 12px rgba(0,0,0,0.02);
+    }
+    .input-field {
+      margin-bottom: 1.2rem;
+    }
+    label {
+      font-weight: 700;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      display: block;
+      margin-bottom: 0.3rem;
+      color: #1c523a;
+    }
+    input, select, button {
+      width: 100%;
+      padding: 0.7rem 1rem;
+      border-radius: 1rem;
+      border: 1.5px solid #d4e8ca;
+      font-family: 'Inter', monospace;
+      font-size: 0.9rem;
+      background: white;
+      transition: 0.2s;
+    }
+    input:focus, select:focus {
+      outline: none;
+      border-color: #2e8b57;
+      box-shadow: 0 0 0 3px #c0e0b5;
+    }
+    button {
+      background: #2a7a48;
+      color: white;
+      font-weight: 700;
+      border: none;
+      cursor: pointer;
+      margin-top: 0.3rem;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    button:hover {
+      background: #1e5f3a;
+      transform: translateY(-2px);
+    }
+    .btn-secondary {
+      background: #5c8f71;
+    }
+    .dir-box {
+      background: #eaf4e5;
+      border-radius: 1rem;
+      padding: 0.5rem 1rem;
+      margin-top: 0.6rem;
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+      flex-wrap: wrap;
+      font-size: 0.85rem;
+    }
+    .stats-card {
+      background: #eaf1e6;
+      border-radius: 1.2rem;
+      padding: 1rem;
+      margin: 1.2rem 0;
+    }
+    .big-number {
+      font-size: 2rem;
+      font-weight: 800;
+      color: #1c5a38;
+      line-height: 1;
+    }
+    .seq-box {
+      background: #fffef5;
+      border-radius: 1rem;
+      padding: 0.8rem;
+      font-family: 'Fira Code', monospace;
+      font-size: 0.75rem;
+      max-height: 110px;
+      overflow-y: auto;
+      border: 1px solid #cde2bc;
+    }
+    hr {
+      margin: 0.8rem 0;
+      border-color: #cde0c5;
+    }
+
+    /* right panel – chart + step table */
+    .visualization {
+      flex: 2.4;
+      min-width: 480px;
+      background: white;
+      border-radius: 1.5rem;
+      padding: 1.2rem;
+      border: 1px solid #d4e6ce;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.02);
+    }
+    canvas {
+      max-height: 380px;
+      width: 100%;
+    }
+    .legend {
+      font-size: 0.7rem;
+      text-align: center;
+      margin-top: 0.5rem;
+      color: #426b51;
+    }
+    .step-table {
+      width: 100%;
+      font-size: 0.7rem;
+      border-collapse: collapse;
+      margin-top: 0.6rem;
+    }
+    .step-table th, .step-table td {
+      padding: 0.3rem;
+      text-align: center;
+      border-bottom: 1px solid #e2f0da;
+    }
+    @media (max-width: 800px) {
+      body { padding: 1rem; }
+      .dashboard { flex-direction: column; padding: 1rem; }
+      .visualization { min-width: auto; }
+    }
+  </style>
+</head>
+<body>
+<div class="scheduler">
+  <div class="header">
+    <h1>⚡ Disk Scheduling <span>FCFS · SSTF · SCAN</span></h1>
+    <div class="sdg">🌱 SDG 7 · Efficient Access = Lower Energy</div>
+  </div>
+  <div class="dashboard">
+    <!-- LEFT: CONFIGURATION -->
+    <div class="controls">
+      <div class="input-field">
+        <label>📋 Request queue (comma)</label>
+        <input type="text" id="reqQueue" value="98,183,37,122,14,124,65,67" placeholder="e.g., 98,183,37">
+      </div>
+      <div class="input-field">
+        <label>🎯 Initial head position</label>
+        <input type="number" id="headPos" value="53">
+      </div>
+      <div class="input-field">
+        <label>💾 Disk size (max track, 0..N-1)</label>
+        <input type="number" id="diskMax" value="199" min="1">
+      </div>
+      <div class="input-field">
+        <label>🧠 Algorithm</label>
+        <select id="algoSelect">
+          <option value="FCFS">FCFS (First Come First Served)</option>
+          <option value="SSTF">SSTF (Shortest Seek Time First)</option>
+          <option value="SCAN">SCAN (Elevator)</option>
+        </select>
+        <div id="scanDirection" style="display: none;">
+          <div class="dir-box">
+            <span>🧭 SCAN direction :</span>
+            <label><input type="radio" name="scanDir" value="right" checked> ➡️ Right (higher tracks)</label>
+            <label><input type="radio" name="scanDir" value="left"> ⬅️ Left (lower tracks)</label>
+          </div>
+          <div style="font-size:0.7rem; margin-top:5px;">* SCAN goes to disk end, then reverses</div>
+        </div>
+      </div>
+      <button id="simulateBtn">🚀 SIMULATE</button>
+      <button id="randomBtn" class="btn-secondary">🎲 Random requests</button>
+      <button id="exampleBtn" class="btn-secondary">📖 Load classic example</button>
+
+      <div class="stats-card">
+        <div style="display: flex; justify-content: space-between; align-items: baseline;">
+          <span>📊 Total seek distance</span>
+          <span class="big-number" id="totalSeek">—</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-top: 8px;">
+          <span>📈 Average seek</span><span id="avgSeek">—</span>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+          <span>🔁 Number of moves</span><span id="moveCount">—</span>
+        </div>
+        <hr>
+        <div style="font-weight: 600;">📌 Service order (head positions)</div>
+        <div class="seq-box" id="seqDisplay">—</div>
+      </div>
+    </div>
+
+    <!-- RIGHT: CHART + STEP TABLE -->
+    <div class="visualization">
+      <div style="font-weight: 700; margin-bottom: 0.3rem;">📈 Head movement trajectory</div>
+      <canvas id="movementChart" width="800" height="360" style="width:100%; max-height:360px;"></canvas>
+      <div class="legend">X‑axis: access step | Y‑axis: track number</div>
+      <hr>
+      <div style="font-weight: 600; font-size: 0.8rem;">🔍 Step‑by‑step seek details</div>
+      <div style="max-height: 170px; overflow-y: auto;">
+        <table class="step-table" id="stepTable">
+          <thead><tr><th>Step</th><th>From → To</th><th>Seek</th></tr></thead>
+          <tbody id="stepTableBody"><tr><td colspan="3">—</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // DOM elements
+  const reqInput = document.getElementById('reqQueue');
+  const headInput = document.getElementById('headPos');
+  const diskInput = document.getElementById('diskMax');
+  const algoSelect = document.getElementById('algoSelect');
+  const scanDirDiv = document.getElementById('scanDirection');
+  const simulateBtn = document.getElementById('simulateBtn');
+  const randomBtn = document.getElementById('randomBtn');
+  const exampleBtn = document.getElementById('exampleBtn');
+  const totalSpan = document.getElementById('totalSeek');
+  const avgSpan = document.getElementById('avgSeek');
+  const moveSpan = document.getElementById('moveCount');
+  const seqDisplay = document.getElementById('seqDisplay');
+  const stepTableBody = document.getElementById('stepTableBody');
+
+  let chart = null;
+
+  // toggle SCAN direction UI
+  function toggleScanUI() {
+    scanDirDiv.style.display = algoSelect.value === 'SCAN' ? 'block' : 'none';
+  }
+  algoSelect.addEventListener('change', toggleScanUI);
+  toggleScanUI();
+
+  // parse comma separated integers
+  function parseRequests(raw) {
+    let parts = raw.split(',').map(p => p.trim()).filter(p => p !== "");
+    let nums = [];
+    for (let p of parts) {
+      let val = Number(p);
+      if (isNaN(val)) return null;
+      nums.push(val);
+    }
+    return nums;
+  }
+
+  // ---------- ALGORITHMS (return full sequence including initial head) ----------
+  function fcfs(requests, head) {
+    return [head, ...requests];
+  }
+
+  function sstf(requests, head) {
+    let remaining = [...requests];
+    let current = head;
+    let seq = [current];
+    while (remaining.length) {
+      let bestIdx = 0;
+      let bestDist = Math.abs(remaining[0] - current);
+      for (let i = 1; i < remaining.length; i++) {
+        let d = Math.abs(remaining[i] - current);
+        if (d < bestDist || (d === bestDist && remaining[i] < remaining[bestIdx])) {
+          bestDist = d;
+          bestIdx = i;
+        }
+      }
+      let next = remaining[bestIdx];
+      seq.push(next);
+      current = next;
+      remaining.splice(bestIdx, 1);
+    }
+    return seq;
+  }
+
+  function scan(requests, head, diskMax, direction) {
+    if (!requests.length) return [head];
+    let left = requests.filter(r => r < head).sort((a, b) => b - a); // descending
+    let right = requests.filter(r => r >= head).sort((a, b) => a - b);
+    let seq = [head];
+    let current = head;
+    if (direction === 'right') {
+      for (let r of right) { seq.push(r); current = r; }
+      if (left.length) {
+        if (current !== diskMax) { seq.push(diskMax); current = diskMax; }
+        for (let r of left) { seq.push(r); current = r; }
+      }
+    } else {
+      for (let r of left) { seq.push(r); current = r; }
+      if (right.length) {
+        if (current !== 0) { seq.push(0); current = 0; }
+        for (let r of right) { seq.push(r); current = r; }
+      }
+    }
+    return seq;
+  }
+
+  // compute statistics and step-by-step details
+  function computeDetails(sequence) {
+    if (sequence.length < 2) return { total: 0, avg: 0, moves: 0, steps: [] };
+    let total = 0;
+    let steps = [];
+    for (let i = 1; i < sequence.length; i++) {
+      let seek = Math.abs(sequence[i] - sequence[i-1]);
+      total += seek;
+      steps.push({ from: sequence[i-1], to: sequence[i], seek });
+    }
+    let moves = steps.length;
+    let avg = total / moves;
+    return { total, avg: avg.toFixed(2), moves, steps };
+  }
+
+  // update UI: stats, sequence text, step table, and chart
+  function updateUI(sequence, maxDisk) {
+    const stats = computeDetails(sequence);
+    totalSpan.innerText = stats.total;
+    avgSpan.innerText = stats.avg;
+    moveSpan.innerText = stats.moves;
+
+    // display sequence with arrows
+    let seqStr = sequence.map((val, idx) => idx === 0 ? `📍 ${val}` : `→ ${val}`).join(' ');
+    seqDisplay.innerText = seqStr;
+
+    // build step table
+    stepTableBody.innerHTML = '';
+    if (stats.steps.length === 0) {
+      stepTableBody.innerHTML = '<tr><td colspan="3">No movement</td></tr>';
+    } else {
+      stats.steps.forEach((step, idx) => {
+        let row = `<tr><td>${idx+1}</td><td>${step.from} → ${step.to}</td><td>${step.seek}</td></tr>`;
+        stepTableBody.insertAdjacentHTML('beforeend', row);
+      });
+    }
+
+    // chart update
+    const ctx = document.getElementById('movementChart').getContext('2d');
+    const stepsAxis = sequence.map((_, i) => i);
+    if (chart) {
+      chart.data.labels = stepsAxis;
+      chart.data.datasets[0].data = sequence;
+      chart.options.scales.y.max = Math.max(maxDisk, 10);
+      chart.update();
+    } else {
+      chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: stepsAxis,
+          datasets: [{
+            label: 'Head track position',
+            data: sequence,
+            borderColor: '#2a7a48',
+            backgroundColor: 'rgba(42,122,72,0.06)',
+            borderWidth: 3,
+            pointRadius: 5,
+            pointBackgroundColor: '#135e38',
+            pointBorderColor: '#d2f0c4',
+            tension: 0.15,
+            fill: true
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          plugins: { tooltip: { callbacks: { label: (ctx) => `Track: ${ctx.raw}` } } },
+          scales: {
+            y: { title: { display: true, text: 'Cylinder / Track' }, min: 0, max: Math.max(maxDisk, 10) },
+            x: { title: { display: true, text: 'Access step' } }
+          }
+        }
+      });
+    }
+  }
+
+  // main simulation runner
+  function runSimulation() {
+    let raw = reqInput.value;
+    let requests = parseRequests(raw);
+    if (requests === null) {
+      alert("❌ Invalid format! Use comma separated numbers (e.g., 98, 183, 37)");
+      return;
+    }
+    let head = parseInt(headInput.value);
+    let diskMax = parseInt(diskInput.value);
+    if (isNaN(head) || isNaN(diskMax) || diskMax < 1) {
+      alert("❌ Invalid head position or disk size");
+      return;
+    }
+    head = Math.min(Math.max(0, head), diskMax);
+    let validReqs = requests.filter(r => r >= 0 && r <= diskMax);
+    if (validReqs.length === 0 && requests.length > 0) {
+      alert("⚠️ All requests are outside disk range. No valid requests.");
+      return;
+    }
+
+    const algo = algoSelect.value;
+    let sequence = [];
+    if (algo === 'FCFS') {
+      sequence = fcfs(validReqs, head);
+    } else if (algo === 'SSTF') {
+      sequence = sstf(validReqs, head);
+    } else { // SCAN
+      let direction = document.querySelector('input[name="scanDir"]:checked').value;
+      sequence = scan(validReqs, head, diskMax, direction);
+    }
+    updateUI(sequence, diskMax);
+  }
+
+  // generate random requests within disk limits
+  function randomRequests() {
+    let max = parseInt(diskInput.value);
+    if (isNaN(max) || max < 1) max = 199;
+    let count = Math.floor(Math.random() * 8) + 5; // 5 to 12
+    let arr = [];
+    for (let i = 0; i < count; i++) {
+      arr.push(Math.floor(Math.random() * (max + 1)));
+    }
+    reqInput.value = arr.join(',');
+    runSimulation();
+  }
+
+  function loadClassic() {
+    reqInput.value = "98,183,37,122,14,124,65,67";
+    headInput.value = "53";
+    diskInput.value = "199";
+    algoSelect.value = "SSTF";
+    toggleScanUI();
+    runSimulation();
+  }
+
+  // event listeners
+  simulateBtn.addEventListener('click', runSimulation);
+  randomBtn.addEventListener('click', randomRequests);
+  exampleBtn.addEventListener('click', loadClassic);
+  window.addEventListener('load', runSimulation);
+</script>
+</body>
+</html>
